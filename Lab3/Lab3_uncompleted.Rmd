@@ -239,7 +239,14 @@ Some may find it helpful to read the pipe like the word “then”. For instance
 Filter the scfa_indv data frame for data from Fall 2018, only include study weeks 1 and 3, subset for BRMPS, drop any samples that do not meet the freeze time limits, or are not within the weight range. Keep columns with participant and sample data and butyrate measurements. 
 ```{r}
 f18_but_rps <- scfa_indv %>%
-  filter(study_week == "week1" | study_week == "week3")
+  filter(study_week == "week1" | study_week == "week3") %>%
+  filter(semester == "Fall2018") %>%
+  filter(notes != "frozen >24hrs") 
+  filter(f18_but_rps, supplement_consumed == "BRMPS")
+
+
+summary(f18_but_rps)
+
 ```
 
 
