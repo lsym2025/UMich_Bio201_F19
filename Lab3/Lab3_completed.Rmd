@@ -341,14 +341,14 @@ scfa_wkly_qc <- read_excel("raw_data/SCFA_data.xlsx",
 
   filter(study_week == "week1" | study_week == "week3") %>%
   filter(quantity_compliant=="yes") %>% 
-mutate(scfa_total_median_mM=acetate_median+butyrate_median+propionate_median) %>% 
-mutate(scfa_total_mean_mM=butyrate_mean+acetate_mean+propionate_mean) %>% 
-rename(acetate_median_mM = acetate_median, 
-                    butyrate_median_mM = butyrate_median,
-                    propionate_median_mM = propionate_median) %>% 
-rename(acetate_mean_mM = acetate_mean, 
-                    butyrate_mean_mM = butyrate_mean,
-                    propionate_mean_mM = propionate_mean)
+mutate(scfa_total_median_mmol_kg=acetate_median+butyrate_median+propionate_median) %>% 
+mutate(scfa_total_mean_mmol_kg=butyrate_mean+acetate_mean+propionate_mean) %>% 
+rename(acetate_median_mmol_kg = acetate_median, 
+                    butyrate_median_mmol_kg = butyrate_median,
+                    propionate_median_mmol_kg = propionate_median) %>% 
+rename(acetate_mean_mmol_kg = acetate_mean, 
+                    butyrate_mean_mmol_kg = butyrate_mean,
+                    propionate_mean_mmol_kg = propionate_mean)
 colnames(scfa_wkly_qc)
 
 ```
