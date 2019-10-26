@@ -575,6 +575,8 @@ m65a <- tax_scfa_pH %>%
 
 summary(m65a) #view results 
 
+#this is the only one who has a relationship with given variants.
+
 ```
 
 
@@ -602,6 +604,7 @@ m65b <- tax_scfa_pH %>%
 
 summary(m65b) #view results 
 
+#not the same results
 ```
 
 ```{r}
