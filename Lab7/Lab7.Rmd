@@ -1,6 +1,6 @@
 ---
 title: "Lab 7 - Alpha diversity metrics"
-author: "Kristi Gdanetz MacCready"
+author: "Sunyimeng Lei"
 date: "11/4/2019"
 output: html_document
 ---
@@ -25,13 +25,13 @@ set.seed(7)
 # Import data
 
 ### Sequence variants 
-Import shared/ESV/OTU table and format for phyloseq. Phyloseq works by matching rownames across matrix objects (This is similar to how we matched columns in joins of data frames). A two-dimensional matrix in R looks just like a data frame, however R matrices can be three-dimensional. A three-dimensional object is created when multiple two-dimensional objects are combined (we'll work through this in the upcoming sections). 
+Import shared/ESV/OTU table and format for phyloseq. Phyloseq works by matching rownames across matrix objects (This is similar to how we matched columns in joins of data frames). A two-dimensional matrix in R looks just like a data frame, however R matrices can be three-dimensional. A three-dimensional object is created when multiple two-dimensional objects are combined (we'll work through this in the upcoming sections).  
 ```{r}
 myfunction <- function(x) {
   x = round ( x * 1000 , digits = 0 )
   }
 
-sv_table <- read_delim("~/Documents/UMich_Bio201_F19/raw_data/seq_variants_wide.csv",
+sv_table <- read_delim("~/Documents/UMich_Bio201_F19/Lab7/raw_data/seq_variants_wide.csv",
                             delim = ",", escape_double = FALSE, 
                             trim_ws = TRUE, na=c("NA"),
                             col_types = list()) %>%
@@ -48,7 +48,7 @@ sv_table <- read_delim("~/Documents/UMich_Bio201_F19/raw_data/seq_variants_wide.
 ### Taxa 
 Import taxonomy table and format for phyloseq.
 ```{r}
-taxa <- read_delim("~/Documents/UMich_Bio201_F19/raw_data/seqvar_classifications.csv",
+taxa <- read_delim("~/Documents/UMich_Bio201_F19/Lab7/raw_data/seqvar_classifications.csv",
                             delim = ",", escape_double = FALSE, 
                             trim_ws = TRUE, na=c("NA"),
                             col_types = list()) %>%
@@ -60,7 +60,7 @@ taxa <- read_delim("~/Documents/UMich_Bio201_F19/raw_data/seqvar_classifications
 ### Participant data 
 Import sample data (where a sample is an individual microbiome sample) and format for phyloseq.
 ```{r}
-all_data_indv <- read_delim("~/Documents/UMich_Bio201_F19/raw_data/all_data_indv.txt", 
+all_data_indv <- read_delim("~/Documents/UMich_Bio201_F19/Lab7/raw_data/all_data_indv.txt", 
                             delim = "\t", escape_double = FALSE, 
                             trim_ws = TRUE, 
                             col_types = cols(Bristol_numeric = col_number(),
@@ -87,7 +87,7 @@ There are numerous alpha diversity metrics, however we are going to focus on num
 
 ### Calculate richness
 ```{r}
-samp_data <- read_delim("~/Documents/UMich_Bio201_F19/raw_data/all_data_indv.txt", 
+samp_data <- read_delim("~/Documents/UMich_Bio201_F19/Lab7/raw_data/all_data_indv.txt", 
                             delim = "\t", escape_double = FALSE, 
                             trim_ws = TRUE, 
                             col_types = cols(Bristol_numeric = col_number(),
@@ -110,7 +110,7 @@ richness_df <- physq_obj %>%
   summarise(avg_richness = round(mean(richness), digits = 0)) #calculate average richness per person, per week 
 
 # save richness data 
-write_delim()
+write_delim(richness_df, path = "~/Documents/UMich_Bio201_F19/Lab7/curated_data/richness_df.txt", delim = "\t")
 ```
 
 ### Homework 7.1 
@@ -118,13 +118,51 @@ write_delim()
 We can use these alpha diversity metrics (richness, shannon, or others) in the same manner as any other measured characteristic. So, if we want to determine if the consumption of a supplement changed richness we would use the data frame created in the section above to conduct a paired t-test. 
 ```{r}
 # check assumptions 
+richness_df %>%
+  filter(study_week == "week1" | study_week == "week3",
+         supplement_consumed == "BRMPS") %>% 
+  group_by(study_week) %>% 
+  summarise(sample_size = n()) 
+
+richness_normal<-richness_df %>% 
+   filter(study_week == "week1" | study_week == "week3",
+         supplement_consumed == "BRMPS") 
+  shapiro.test(richness_normal$avg_richness) 
+ggplot(richness_normal, aes(x=avg_richness)) +
+  geom_histogram() 
+qqnorm(richness_normal$avg_richness); qqline(richness_normal$avg_richness)
+
+richness_wk1<- richness_df%>%
+  filter(study_week == "week1") 
+richness_wk3 <- richness_df %>%
+  filter(study_week == "week3") 
+var.test(x = richness_wk1$avg_richness, 
+         y = richness_wk3$avg_richness, 
+         alternative = "two.sided")
+
+#normal,equal variance
+
 
 # write code for paired t-test here 
 
+richness_df2 <- inner_join(x = richness_wk1, y = richness_wk3,
+                    by = c("participant_id",
+                           "semester", "supplement_consumed")) %>%
+  rename(richness_wk1 = avg_richness.x,
+         richness_wk3 = avg_richness.y) %>%
+  select(-starts_with("study_week"))
+
+t.test(x = richness_df2$richness_wk1, 
+       y = richness_df2$richness_wk3,
+       alternative = "less", paired = TRUE, var.equal = TRUE)
+
 # p-value = ?
+ #p=1
 ```
 
 Did you conclude the richness changed from week 1 to week 3 in individuals who consumped BRMPS?
+
+No significant increase from week 1 to 3
 
 ### Plot richness
 
@@ -149,7 +187,8 @@ rich2 <- rich1 +
   theme(legend.position = "none")
 rich2
 
-save_plot() #upload plot to your GitHub fork 
+save_plot(filename = "~/Documents/UMich_Bio201_F19/Lab7/figures/rich2.pdf",
+          plot = rich2) #upload plot to your GitHub fork 
 ```
 
 
@@ -171,17 +210,53 @@ simpson_df <- physq_obj %>%
   summarise(avg_richness = round(mean(simpson), digits = 2))  #use 2 digits since 0-1 scale 
 
 # save Simpson data 
-write_delim()
+write_delim(simpson_df, path = "~/Documents/UMich_Bio201_F19/Lab7/curated_data/simpson_df.txt", delim = "\t")
 ```
 
 ### Homework 7.2 
 Determine if Shannon Diversity differed significanty before vs. during supplement consumption. Write your conclusions in the space below.
 ```{r}
 # check assumptions 
+simpson_df %>%
+  filter(study_week == "week1" | study_week == "week3",
+         supplement_consumed == "BRMPS") %>% 
+  group_by(study_week) %>% 
+  summarise(sample_size = n()) 
+
+simpson_normal<-simpson_df %>% 
+   filter(study_week == "week1" | study_week == "week3",
+         supplement_consumed == "BRMPS") 
+  shapiro.test(simpson_normal$avg_richness) 
+ggplot(simpson_normal, aes(x=avg_richness)) +
+  geom_histogram() 
+qqnorm(simpson_normal$avg_richness); qqline(simpson_normal$avg_richness)
+
+simpson_wk1<- simpson_df%>%
+  filter(study_week == "week1") 
+simpson_wk3 <- simpson_df %>%
+  filter(study_week == "week3") 
+var.test(x = simpson_wk1$avg_richness, 
+         y = simpson_wk3$avg_richness, 
+         alternative = "two.sided")
+#non-normal, no equal variance
+
 
 # write code for paired t-test here 
 
+simpson_df2 <- inner_join(x = simpson_wk1, y = simpson_wk3,
+                    by = c("participant_id",
+                           "semester", "supplement_consumed")) %>%
+  rename(simpson_wk1 = avg_richness.x,
+         simpson_wk3 = avg_richness.y) %>%
+  select(-starts_with("study_week"))
+
+t.test(x = simpson_df2$simpson_wk1, y = simpson_df2$simpson_wk3, 
+       alternative = "less", paired = TRUE) 
+
 # p-value = ?
+
+#p= 0.9576
+#no significant in Shannon Diversity
 ```
 
 ### Plot simpson 
@@ -203,7 +278,8 @@ simp2 <- simp1 +
   theme(legend.position = "none")
 simp2
 
-save_plot() #upload plot to your GitHub fork 
+save_plot(filename = "~/Documents/UMich_Bio201_F19/Lab7/figures/simp2.pdf",
+          plot = simp2) #upload plot to your GitHub fork 
 ```
 
 
